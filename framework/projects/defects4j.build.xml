@@ -389,4 +389,51 @@ project-specific build file ("project_id"/"project_id".build.xml) for the
               todir="${d4j.workdir}" overwrite="true" />
     </target>
 
+<!-- 
+    OpenClover
+-->
+    <taskdef resource="cloverlib.xml"/>
+
+    <target name="clover.clean">
+        <clover-clean/>
+    </target>
+
+    <target name="with.clover">
+        <clover-setup instrumentationLevel="method"/>
+    </target>
+
+    <target name="run.dev.test.clover" depends="compile.tests,update.all.tests" description="Run unit tests with OpenClover">
+        <junit printsummary="yes" haltonfailure="no" haltonerror="no" fork="no" showOutput="true">
+            <classpath>
+                <pathelement path="${clover.jar}"/>
+                <path refid="d4j.test.classpath"/>
+            </classpath>
+
+            <sysproperty key="OUTFILE" value="${OUTFILE}"/>
+            <formatter type="xml"/>
+            <test name="${test.entry.class}" methods="${test.entry.method}" if="test.entry.class" />
+            <batchtest unless="test.entry.class">
+                <fileset refid="all.manual.tests" />
+            </batchtest>
+        </junit>
+        <!-- fail build in case we are running all classes, but there are none in the fileset -->
+        <if> <not> <isset property="test.entry.class" /> </not> <then>
+            <pathconvert refid="all.manual.tests" property="fileset.notempty" setonempty="false" />
+            <fail unless="fileset.notempty" message="Test is running with empty fileset" />
+        </then> </if>
+    </target>
+
+    <target name="clover.xml">
+        <clover-report>
+        <current outfile="${coverage.xml.out}" includeFailedTestCoverage="true">
+            <format type="xml"/>
+        </current>
+        </clover-report>
+    </target>
+
+    <target name="clover.html">
+        <clover-html-report outdir="coverage"/>
+    </target>
+
+    <property name="clover.jar" location="${user.home}/.ant/lib/clover.jar"/>
 </project>
